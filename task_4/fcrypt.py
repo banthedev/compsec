@@ -53,6 +53,7 @@ def encrypt(public_key_path, plaintext_file_path, encrypted_file_path):
 
     print("Encryption Successful.")
 
+# Neeed to debug
 def decrypt(private_key_path, encrypted_file_path, decrypted_file_path):
     private_key = RSA.import_key(open(private_key_path).read())
     
