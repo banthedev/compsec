@@ -6,6 +6,6 @@
 Pretty Good Privacy scheme. The program should accept the desired operation, the recipient’s key, an
 input file, and an output file.
 
-**Libraries and techmologies used:** pycryptodome, argpase (for flags)
+**Libraries and technologies used:** pycryptodome, argpase (for flags)
 
 
