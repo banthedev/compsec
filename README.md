@@ -11,7 +11,7 @@ input file, and an output file.
 
 ### Project - Milestones 1-3
 
-**Description:** Rhe aim of this project is to familiarize you with cryptographic tools by implementing a secure file transfer
+**Description:** The aim of this project is to familiarize you with cryptographic tools by implementing a secure file transfer
 protocol, similar to the widely-used AirDrop feature in Apple devices. Throughout this project, you
 will gain practical experience in various cryptographic and cybersecurity concepts, including symmetric
 and asymmetric cryptography, digital certificates, public key infrastructure, mutual authentication, non-
