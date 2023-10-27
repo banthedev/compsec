@@ -7,7 +7,7 @@ James Pope, Bryan Montalvan, Aaron Roche
 Pretty Good Privacy scheme. The program should accept the desired operation, the recipient’s key, an
 input file, and an output file.
 
-**Technologies and libraries used:** pycryptodome, argpase (for flags)
+**Technologies and libraries used:** pycryptodome, argparse (for flags)
 
 ### Project - Milestones 1-3
 
