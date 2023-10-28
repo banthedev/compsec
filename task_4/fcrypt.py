@@ -9,6 +9,7 @@ import argparse
 import json
 import base64
 
+
 class Message:
     def __init__(self, ciphertext, tag, nonce):
         self.ciphertext = ciphertext
@@ -32,6 +33,7 @@ class Message:
             base64.b64decode(data["nonce"])
         )
 
+
 def encrypt(public_key_path, plaintext_file_path, encrypted_file_path):
     recipient_key = RSA.import_key(open(public_key_path).read())
     print(recipient_key)
@@ -53,10 +55,10 @@ def encrypt(public_key_path, plaintext_file_path, encrypted_file_path):
 
     print("Encryption Successful.")
 
-# Neeed to debug
+
 def decrypt(private_key_path, encrypted_file_path, decrypted_file_path):
     private_key = RSA.import_key(open(private_key_path).read())
-    
+
     try:
         with open(encrypted_file_path, 'r') as f_enc:
             message = Message.from_json(f_enc.read())
@@ -65,26 +67,32 @@ def decrypt(private_key_path, encrypted_file_path, decrypted_file_path):
         return
 
     cipher_rsa = PKCS1_OAEP.new(private_key)
-    session_key = cipher_rsa.decrypt(message.ciphertext)  # This line needs clarification
+    # This line needs clarification
+    session_key = cipher_rsa.decrypt(message.ciphertext)
 
     cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce=message.nonce)
     plaintext = cipher_aes.decrypt_and_verify(message.ciphertext, message.tag)
 
     with open(decrypted_file_path, 'wb') as f_dec:
         f_dec.write(plaintext)
-    
+
     print("Decryption Successful.")
+
 
 if __name__ == '__main__':
     # argparse
-    parser = argparse.ArgumentParser(description="PGP-like file encryption and decryption (task 4).")
-    
+    parser = argparse.ArgumentParser(
+        description="PGP-like file encryption and decryption (task 4).")
+
     # Use add_mutually_exclusive_group to ensure only one of --encrypt or --decrypt is provided
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--encrypt", action="store_true", help="Encrypt the file.")
-    group.add_argument("--decrypt", action="store_true", help="Decrypt the file.")
-    
-    parser.add_argument("key_path", help="Path to public key (for encryption) or private key (for decryption).")
+    group.add_argument("--encrypt", action="store_true",
+                       help="Encrypt the file.")
+    group.add_argument("--decrypt", action="store_true",
+                       help="Decrypt the file.")
+
+    parser.add_argument(
+        "key_path", help="Path to public key (for encryption) or private key (for decryption).")
     parser.add_argument("input_file", help="Path to input file.")
     parser.add_argument("output_file", help="Path to output file.")
 
