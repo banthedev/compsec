@@ -5,6 +5,7 @@
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
+from os import urandom
 import argparse
 import json
 import base64
@@ -38,7 +39,8 @@ class Message:
 
 
 def encrypt(public_key_path, plaintext_file_path, encrypted_file_path):
-    session_key = get_random_bytes(16)
+    # get random 128 bit key
+    session_key = urandom(16)
 
     cipher_aes = AES.new(session_key, AES.MODE_EAX)
     with open(plaintext_file_path, 'rb') as f:
@@ -61,20 +63,17 @@ def encrypt(public_key_path, plaintext_file_path, encrypted_file_path):
 
 
 def decrypt(private_key_path, encrypted_file_path, decrypted_file_path):
+
+    # get the encrypted file contents in a json obj
+    with open(encrypted_file_path, 'rb') as f_enc:
+        message = Message.from_json(f_enc.read())
+
+    # decrypt the encrypted session key
     private_key = RSA.import_key(open(private_key_path, "rb").read())
-
-    try:
-        with open(encrypted_file_path, 'rb') as f_enc:
-            message = Message.from_json(f_enc.read())
-    except UnicodeDecodeError:
-        print("Error: The encrypted file is not in the expected format. Please ensure it was correctly encrypted.")
-        return
-
     cipher_rsa = PKCS1_OAEP.new(private_key)
+    session_key = cipher_rsa.decrypt(message.sessionKey)
 
-    # This line needs clarification
-    session_key = cipher_rsa.decrypt(message.ciphertext)
-
+    # decrypt the ciphertext
     cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce=message.nonce)
     plaintext = cipher_aes.decrypt_and_verify(message.ciphertext, message.tag)
 
