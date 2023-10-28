@@ -50,7 +50,7 @@ def encrypt(public_key_path, plaintext_file_path, encrypted_file_path):
     message_json = message.to_json()
 
     # Save the JSON string to the file
-    with open(encrypted_file_path, 'w') as f_enc:
+    with open(encrypted_file_path, 'wb') as f_enc:
         f_enc.write(message_json)
 
     print("Encryption Successful.")
@@ -60,7 +60,7 @@ def decrypt(private_key_path, encrypted_file_path, decrypted_file_path):
     private_key = RSA.import_key(open(private_key_path).read())
 
     try:
-        with open(encrypted_file_path, 'r') as f_enc:
+        with open(encrypted_file_path, 'rb') as f_enc:
             message = Message.from_json(f_enc.read())
     except UnicodeDecodeError:
         print("Error: The encrypted file is not in the expected format. Please ensure it was correctly encrypted.")
