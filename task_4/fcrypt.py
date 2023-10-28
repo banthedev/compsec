@@ -11,16 +11,18 @@ import base64
 
 
 class Message:
-    def __init__(self, ciphertext, tag, nonce):
+    def __init__(self, ciphertext, tag, nonce, sessionKey):
         self.ciphertext = ciphertext
         self.tag = tag
         self.nonce = nonce
+        self.sessionKey = sessionKey
 
     def to_json(self):
         return json.dumps({
             "ciphertext": base64.b64encode(self.ciphertext).decode('utf-8'),
             "tag": base64.b64encode(self.tag).decode('utf-8'),
-            "nonce": base64.b64encode(self.nonce).decode('utf-8')
+            "nonce": base64.b64encode(self.nonce).decode('utf-8'),
+            "sessionKey": base64.b64encode(self.sessionKey).decode('utf-8')
         })
 
     @classmethod
@@ -30,13 +32,12 @@ class Message:
         return cls(
             base64.b64decode(data["ciphertext"]),
             base64.b64decode(data["tag"]),
-            base64.b64decode(data["nonce"])
+            base64.b64decode(data["nonce"]),
+            base64.b64decode(data["sessionKey"])
         )
 
 
 def encrypt(public_key_path, plaintext_file_path, encrypted_file_path):
-    recipient_key = RSA.import_key(open(public_key_path).read())
-    print(recipient_key)
     session_key = get_random_bytes(16)
 
     cipher_aes = AES.new(session_key, AES.MODE_EAX)
@@ -44,20 +45,23 @@ def encrypt(public_key_path, plaintext_file_path, encrypted_file_path):
         plaintext = f.read()
     ciphertext, tag = cipher_aes.encrypt_and_digest(plaintext)
 
+    # encrypt with RSA by using the pub key
+    recipient_key = RSA.import_key(open(public_key_path, "rb").read())
+    rsa_obj = PKCS1_OAEP.new(recipient_key)
+    encrypted_key = rsa_obj.encrypt(session_key)
+
     # Create a Message object
-    message = Message(ciphertext, tag, cipher_aes.nonce)
-    # Convert the Message object to JSON
-    message_json = message.to_json()
+    message = Message(ciphertext, tag, cipher_aes.nonce, encrypted_key)
 
     # Save the JSON string to the file
     with open(encrypted_file_path, 'wb') as f_enc:
-        f_enc.write(message_json)
+        f_enc.write(str.encode(message.to_json()))
 
     print("Encryption Successful.")
 
 
 def decrypt(private_key_path, encrypted_file_path, decrypted_file_path):
-    private_key = RSA.import_key(open(private_key_path).read())
+    private_key = RSA.import_key(open(private_key_path, "rb").read())
 
     try:
         with open(encrypted_file_path, 'rb') as f_enc:
@@ -67,6 +71,7 @@ def decrypt(private_key_path, encrypted_file_path, decrypted_file_path):
         return
 
     cipher_rsa = PKCS1_OAEP.new(private_key)
+
     # This line needs clarification
     session_key = cipher_rsa.decrypt(message.ciphertext)
 
