@@ -3,6 +3,10 @@ import json
 import getpass
 import crypt
 
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+
 config_file = "./.config/SecureDrop/config.json"
 
 
@@ -101,11 +105,43 @@ def register_user():
         "password": hash
     }
 
-    # create the path
+    # create the path for the DB
     os.makedirs(os.path.dirname(config_file))
 
     json.dump(data, open(config_file, "w"),
               sort_keys=True, indent=4)
+
+    # now, create the public and private key
+
+    # generate a private key
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+        backend=default_backend()
+    )
+
+    # get the public key from the private key
+    public_key = private_key.public_key()
+
+    # serialize the private key
+    private_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
+    # serialize the public key
+    public_key_pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
+    # Save the keys to files
+    with open('./.config/SecureDrop/private_key', 'wb') as f:
+        f.write(private_key_pem)
+
+    with open('./.config/SecureDrop/public_key', 'wb') as f:
+        f.write(public_key_pem)
 
     print("User registered.")
 
