@@ -25,7 +25,8 @@ def log_in():
 
     obj = json.load(open(config_file, "r"))
     if obj["email"] == email and obj["password"] == password:
-        print("\nUsername and Password verified. Welcome!")
+        print("\nWelcome to SecureDrop.")
+        print("\nType \"help\" for commands.")
         return True
     else:
         print("\nUsername and password not verified.")
