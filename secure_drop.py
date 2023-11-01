@@ -3,19 +3,14 @@ import json
 import getpass
 import crypt
 
-config_file = "./passwd.json"
+config_file = "./.config/SecureDrop/config.json"
 
 
 def main():
+    # If the config file does not exist,
     if not os.path.exists(config_file):
-        print("No users are registered with this client.")
-        res = input("Would you like to register a new user? (y/n): ")
-        if res == "N" or res == 'n':
-            print("Exiting.")
-            exit()
-        elif res == 'Y' or res == 'y':
-            register_user()
-            exit()
+        register_user()
+        exit()
     else:
         log_in(3)
 
@@ -69,18 +64,15 @@ def log_in(n_attempts=0):
             return log_in(n_attempts)
 
 
-def store_user(name, email, hashed_password):
-
-    data = {
-        "name": name,
-        "email": email,
-        "password": hashed_password
-    }
-
-    json.dump(data, open(config_file, "w"), sort_keys=True, indent=4)
-
-
 def register_user():
+    print("No users are registered with this client.")
+    res = input("Would you like to register a new user? (y/n): ")
+
+    # exit if the user doesn't want to register
+    if res != 'Y' and res != 'y':
+        print("Unknown Input. Exiting SecureDrop.")
+        exit()
+
     print("\n")
     name = input("Enter full name: ")
     email = input("Enter full email: ")
@@ -90,18 +82,32 @@ def register_user():
     print("\n")
     if password != re_password:
         print("Passwords do not match.\nUser not registered.")
-    else:
-        print("Passwords match.")
+        print("Exiting SecureDrop.")
+        exit()
 
-        # crate a shah512 hash of the password
-        salt = crypt.mksalt(crypt.METHOD_SHA512)
+    # the passwords are equal
+    print("Passwords match.")
 
-        # create the hash using the salt
-        hash = crypt.crypt(password, salt)
+    # crate a shah512 hash of the password
+    salt = crypt.mksalt(crypt.METHOD_SHA512)
 
-        # store the new user and hashed password in the db
-        store_user(name, email, hash)
-        print("User registered.")
+    # create the hash using the salt
+    hash = crypt.crypt(password, salt)
+
+    # store the new user and hashed password in the db
+    data = {
+        "name": name,
+        "email": email,
+        "password": hash
+    }
+
+    # create the path
+    os.makedirs(os.path.dirname(config_file))
+
+    json.dump(data, open(config_file, "w"),
+              sort_keys=True, indent=4)
+
+    print("User registered.")
 
 
 def print_help():
