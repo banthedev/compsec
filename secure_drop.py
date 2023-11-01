@@ -1,7 +1,7 @@
 import os
 import json
 import getpass
-
+import crypt
 
 config_file = "./config.json"
 
@@ -34,11 +34,20 @@ def log_in(n_attempts=0):
 
     obj = json.load(open(config_file, "r"))
 
+    # get the hashed password from the db
+    stored_hash = obj["password"]
+
+    # extract the salt from that hash
+    salt = stored_hash[:stored_hash.index("$", 3) + 1]
+
+    # create a hash of the password the user entered,
+    # using the stored salt from the registration.
+    new_hash = crypt.crypt(password, salt)
+
     # check if the user has sucessfully logged in.
-    if obj["email"] == email and obj["password"] == password:
+    if obj["email"] == email and stored_hash == new_hash:
         print("\nWelcome to SecureDrop.")
         print("\nType \"help\" for commands.")
-        return True
     else:
         # The user failed login.
         print("\nUsername and password not verified.")
@@ -51,21 +60,18 @@ def log_in(n_attempts=0):
         else:
             # try again
             print(f"You have {n_attempts} attempts remaining.")
-            log_in(n_attempts)
-
-    return False
+            return log_in(n_attempts)
 
 
-def store_user(name, email, password):
+def store_user(name, email, hashed_password):
 
     data = {
         "name": name,
         "email": email,
-        "password": password
+        "password": hashed_password
     }
 
     json.dump(data, open(config_file, "w"), sort_keys=True, indent=4)
-    return True
 
 
 def register_user():
@@ -78,12 +84,18 @@ def register_user():
     print("\n")
     if password != re_password:
         print("Passwords do not match.\nUser not registered.")
-        return False
     else:
         print("Passwords match.")
-        store_user(name, email, password)
+
+        # crate a shah512 hash of the password
+        salt = crypt.mksalt(crypt.METHOD_SHA512)
+
+        # create the hash using the salt
+        hash = crypt.crypt(password, salt)
+
+        # store the new user and hashed password in the db
+        store_user(name, email, hash)
         print("User registered.")
-        return True
 
 
 if __name__ == "__main__":
