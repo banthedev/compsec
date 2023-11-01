@@ -19,13 +19,14 @@ def main():
     else:
         log_in(3)
 
+    # At this point, the shell is opened.
+
     cmd = ""
     while cmd != "exit":
         cmd = input("secure_drop> ")
-        
+
         if cmd == "help":
             print_help()
-
 
     print("Exiting SecureDrop.")
 
