@@ -3,7 +3,7 @@ import json
 import getpass
 import crypt
 
-config_file = "./config.json"
+config_file = "./passwd.json"
 
 
 def main():
@@ -15,12 +15,17 @@ def main():
             exit()
         elif res == 'Y' or res == 'y':
             register_user()
+            exit()
     else:
         log_in(3)
 
     cmd = ""
     while cmd != "exit":
         cmd = input("secure_drop> ")
+        
+        if cmd == "help":
+            print_help()
+
 
     print("Exiting SecureDrop.")
 
@@ -96,6 +101,13 @@ def register_user():
         # store the new user and hashed password in the db
         store_user(name, email, hash)
         print("User registered.")
+
+
+def print_help():
+    print("\t\"add\"\t-> Add a new contact")
+    print("\t\"list\"\t-> List all online contacts")
+    print("\t\"send\"\t-> Transfer file to contact")
+    print("\t\"exit\"\t-> Exit SecureDrop")
 
 
 if __name__ == "__main__":
