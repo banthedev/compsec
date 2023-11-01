@@ -16,20 +16,43 @@ def main():
         elif res == 'Y' or res == 'y':
             register_user()
     else:
-        log_in()
+        log_in(3)
+
+    cmd = ""
+    while cmd != "exit":
+        cmd = input("secure_drop> ")
+
+    print("Exiting SecureDrop.")
+
+# returns true if the user has sucessfully logged in
+# returns false if there was an error
 
 
-def log_in():
+def log_in(n_attempts=0):
     email = input("Enter email address: ")
     password = getpass.getpass("Enter password: ")
 
     obj = json.load(open(config_file, "r"))
+
+    # check if the user has sucessfully logged in.
     if obj["email"] == email and obj["password"] == password:
         print("\nWelcome to SecureDrop.")
         print("\nType \"help\" for commands.")
         return True
     else:
+        # The user failed login.
         print("\nUsername and password not verified.")
+        n_attempts -= 1
+
+        # check if the user has used up all their login attempts for this session
+        if n_attempts == 0:
+            print("You have used the maximum number of attempts. Exiting.")
+            exit()
+        else:
+            # try again
+            print(f"You have {n_attempts} attempts remaining.")
+            log_in(n_attempts)
+
     return False
 
 
