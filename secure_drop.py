@@ -77,7 +77,7 @@ def log_in(n_attempts=0):
         else:
             # try again
             print(f"You have {n_attempts} attempts remaining.")
-            return log_in(n_attempts)
+            log_in(n_attempts)
 
 
 def register_user():
@@ -166,9 +166,7 @@ def register_user():
 
 
 def add_contact():
-    # get the encryption key
-    encryption_key = json.load(open(encryption_key_file, "r"))["key"]
-    encryption_key = base64.b64decode(encryption_key)
+    encryption_key = get_aes_encryption_key()
 
     # prompt for input
     name = input("\nEnter full name: ")
@@ -193,10 +191,6 @@ def add_contact():
 
 
 def list_contacts():
-    # get the encryption key
-    encryption_key = json.load(open(encryption_key_file, "r"))["key"]
-    encryption_key = base64.b64decode(encryption_key)
-
     contacts = json.load(open(config_file, "r"))["data"]["contacts"]
     for contact in contacts:
         name, email = decrypt_contact(contact)
@@ -227,9 +221,17 @@ def decrypt_data(iv, ct, key):
 
 
 def decrypt_contact(contact):
+    encryption_key = get_aes_encryption_key()
+    decrypted_name = decrypt_data(
+        contact["niv"], contact["name"], encryption_key)
+    decrypted_email = decrypt_data(
+        contact["eiv"], contact["email"], encryption_key)
+    return decrypted_name, decrypted_email
+
+
+def get_aes_encryption_key():
     encryption_key = json.load(open(encryption_key_file, "r"))["key"]
-    encryption_key = base64.b64decode(encryption_key)
-    return decrypt_data(contact["niv"], contact["name"], encryption_key), decrypt_data(contact["eiv"], contact["email"], encryption_key)
+    return base64.b64decode(encryption_key)
 
 
 if __name__ == "__main__":
