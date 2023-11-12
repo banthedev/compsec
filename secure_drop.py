@@ -44,10 +44,11 @@ def log_in(n_attempts=0):
 
     # extract the salt from that hash
     salt = stored_hash[:stored_hash.index("$", 3) + 1]
-
+    print(f'salt: {salt}')
     # create a hash of the password the user entered,
     # using the stored salt from the registration.
     new_hash = crypt.crypt(password, salt)
+    print(f'hash: {new_hash}')
 
     # check if the user has sucessfully logged in.
     if obj["email"] == email and stored_hash == new_hash:
