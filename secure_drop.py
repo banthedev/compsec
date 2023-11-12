@@ -2,12 +2,18 @@ import os
 import json
 import getpass
 import crypt
+import base64
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+
 config_file = "./.config/SecureDrop/config.json"
+encryption_key_file = "./.config/SecureDrop/key.json"
 
 
 def main():
@@ -27,6 +33,12 @@ def main():
         if cmd == "help":
             print_help()
 
+        elif cmd == "add":
+            add_contact()
+
+        elif cmd == "list":
+            list_contacts()
+
     print("Exiting SecureDrop.")
 
 # returns true if the user has sucessfully logged in
@@ -37,7 +49,7 @@ def log_in(n_attempts=0):
     email = input("Enter email address: ")
     password = getpass.getpass("Enter password: ")
 
-    obj = json.load(open(config_file, "r"))
+    obj = json.load(open(config_file, "r"))["data"]
 
     # get the hashed password from the db
     stored_hash = obj["password"]
@@ -92,7 +104,7 @@ def register_user():
     # the passwords are equal
     print("Passwords match.")
 
-    # crate a shah512 hash of the password
+    # create a shah512 hash of the password
     salt = crypt.mksalt(crypt.METHOD_SHA512)
 
     # create the hash using the salt
@@ -100,15 +112,22 @@ def register_user():
 
     # store the new user and hashed password in the db
     data = {
-        "name": name,
-        "email": email,
-        "password": hash
-    }
+        "data": {"name": name,
+                 "email": email,
+                 "password": hash,
+                 "contacts": []
+                 }}
 
     # create the path for the DB
     os.makedirs(os.path.dirname(config_file))
 
     json.dump(data, open(config_file, "w"),
+              sort_keys=True, indent=4)
+
+    # Now, we create an encryption key to use for contacts in the future.
+    key = get_random_bytes(16)
+    key = base64.b64encode(key).decode('utf-8')
+    json.dump({"key": key}, open(encryption_key_file, "w"),
               sort_keys=True, indent=4)
 
     # now, create the public and private key
@@ -146,11 +165,71 @@ def register_user():
     print("User registered.")
 
 
+def add_contact():
+    # get the encryption key
+    encryption_key = json.load(open(encryption_key_file, "r"))["key"]
+    encryption_key = base64.b64decode(encryption_key)
+
+    # prompt for input
+    name = input("\nEnter full name: ")
+    email = input("Enter email: ")
+
+    obj = json.load(open(config_file, "r"))
+
+    # encrypt the data
+    niv, encrypted_name = encrypt_data(name, encryption_key)
+    eiv, encrypted_email = encrypt_data(email, encryption_key)
+    obj["data"]["contacts"].append({
+        "name": encrypted_name,
+        "niv":  niv,
+        "email": encrypted_email,
+        "eiv": eiv
+    })
+
+    json.dump(obj, open(config_file, "w"),
+              sort_keys=True, indent=4)
+
+    print("Contact Added.")
+
+
+def list_contacts():
+    # get the encryption key
+    encryption_key = json.load(open(encryption_key_file, "r"))["key"]
+    encryption_key = base64.b64decode(encryption_key)
+
+    contacts = json.load(open(config_file, "r"))["data"]["contacts"]
+    for contact in contacts:
+        name, email = decrypt_contact(contact)
+        print(f'\t * {name} <{email}>')
+
+
 def print_help():
     print("\t\"add\"\t-> Add a new contact")
     print("\t\"list\"\t-> List all online contacts")
     print("\t\"send\"\t-> Transfer file to contact")
     print("\t\"exit\"\t-> Exit SecureDrop")
+
+
+def encrypt_data(data, key):
+    cipher = AES.new(key, AES.MODE_CBC)
+    ct_bytes = cipher.encrypt(pad(data.encode('utf-8'), AES.block_size))
+    iv = base64.b64encode(cipher.iv).decode('utf-8')
+    ct = base64.b64encode(ct_bytes).decode('utf-8')
+    return iv, ct
+
+
+def decrypt_data(iv, ct, key):
+    iv = base64.b64decode(iv)
+    ct = base64.b64decode(ct)
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    pt = unpad(cipher.decrypt(ct), AES.block_size)
+    return pt.decode('utf-8')
+
+
+def decrypt_contact(contact):
+    encryption_key = json.load(open(encryption_key_file, "r"))["key"]
+    encryption_key = base64.b64decode(encryption_key)
+    return decrypt_data(contact["niv"], contact["name"], encryption_key), decrypt_data(contact["eiv"], contact["email"], encryption_key)
 
 
 if __name__ == "__main__":
