@@ -61,8 +61,13 @@ def log_in(n_attempts=0):
     # using the stored salt from the registration.
     new_hash = crypt.crypt(password, salt)
 
+    # decrypt the name, email from the database
+    encryption_key = get_aes_encryption_key()
+    decrypted_email = decrypt_data(
+        obj["eiv"], obj["email"], encryption_key)
+
     # check if the user has sucessfully logged in.
-    if obj["email"] == email and stored_hash == new_hash:
+    if decrypted_email == email and stored_hash == new_hash:
         print("\nWelcome to SecureDrop.")
         print("\nType \"help\" for commands.")
     else:
@@ -89,6 +94,9 @@ def register_user():
         print("Unknown Input. Exiting SecureDrop.")
         exit()
 
+    # create the path for the DB
+    os.makedirs(os.path.dirname(config_file))
+
     print("\n")
     name = input("Enter full name: ")
     email = input("Enter full email: ")
@@ -110,24 +118,26 @@ def register_user():
     # create the hash using the salt
     hash = crypt.crypt(password, salt)
 
+    # Now, we create an AES encryption key to use for storing names/emails.
+    encryption_key = get_random_bytes(16)
+    encryption_key = base64.b64encode(encryption_key).decode('utf-8')
+    json.dump({"key": encryption_key}, open(encryption_key_file, "w"),
+              sort_keys=True, indent=4)
+    encryption_key = base64.b64decode(encryption_key)
+
     # store the new user and hashed password in the db
+    niv, encrypted_name = encrypt_data(name, encryption_key)
+    eiv, encrypted_email = encrypt_data(email, encryption_key)
     data = {
-        "data": {"name": name,
-                 "email": email,
+        "data": {"name": encrypted_name,
+                 "niv": niv,
+                 "email": encrypted_email,
+                 "eiv": eiv,
                  "password": hash,
                  "contacts": []
                  }}
 
-    # create the path for the DB
-    os.makedirs(os.path.dirname(config_file))
-
     json.dump(data, open(config_file, "w"),
-              sort_keys=True, indent=4)
-
-    # Now, we create an encryption key to use for contacts in the future.
-    key = get_random_bytes(16)
-    key = base64.b64encode(key).decode('utf-8')
-    json.dump({"key": key}, open(encryption_key_file, "w"),
               sort_keys=True, indent=4)
 
     # now, create the public and private key
