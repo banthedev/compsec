@@ -3,6 +3,7 @@ import json
 import getpass
 import crypt
 import base64
+import socket
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
@@ -199,12 +200,29 @@ def add_contact():
 
     print("Contact Added.")
 
-
 def list_contacts():
     contacts = json.load(open(config_file, "r"))["data"]["contacts"]
     for contact in contacts:
         name, email = decrypt_contact(contact)
-        print(f'\t * {name} <{email}>')
+        # An example host and port
+        host = "student"
+        port = 2022
+        if is_contact_online(email, host, port):
+            print(f'\t * {name} <{email}> - Online')
+        else:
+            print(f'\t * {name} <{email}> - Offline')
+
+
+def is_contact_online(email, host, port):
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)  # Timeout for the socket operation
+            s.connect((host, port))
+            s.sendall(email.encode())
+            data = s.recv(1024).decode()
+            return data == "online"
+    except socket.error:
+        return False
 
 
 def print_help():
