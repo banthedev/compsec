@@ -1,6 +1,6 @@
 import socket
 
-def mock_server():
+def test_server():
     # Local testing here (as stated in PDF)
     host = 'localhost'
     port = 2022
@@ -8,7 +8,7 @@ def mock_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, port))
         s.listen()
-        print(f"Mock server listening on {port}")
+        print(f"Test server listening on {port}")
 
         while True:
             conn, addr = s.accept()
@@ -22,4 +22,4 @@ def mock_server():
                     conn.sendall(response.encode())
 
 if __name__ == '__main__':
-    mock_server()
+    test_server()
