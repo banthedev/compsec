@@ -205,7 +205,7 @@ def list_contacts():
     for contact in contacts:
         name, email = decrypt_contact(contact)
         # An example host and port
-        host = "student"
+        host = "localhost"
         port = 2022
         if is_contact_online(email, host, port):
             print(f'\t * {name} <{email}> - Online')
