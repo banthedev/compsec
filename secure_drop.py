@@ -202,23 +202,32 @@ def add_contact():
 
 def list_contacts():
     contacts = json.load(open(config_file, "r"))["data"]["contacts"]
+    network_key = get_aes_encryption_key()
     for contact in contacts:
         name, email = decrypt_contact(contact)
         # An example host and port
         host = "localhost"
         port = 2022
-        if is_contact_online(email, host, port):
+        if is_contact_online(email, host, port, network_key):
             print(f'\t * {name} <{email}> - Online')
         else:
             print(f'\t * {name} <{email}> - Offline')
 
+# Symmetric encryption to encrypt email before being sent over the network
+def encrypt_network_data(data, key):
+    cipher = AES.new(key, AES.MODE_CBC)
+    ct_bytes = cipher.encrypt(pad(data.encode('utf-8'), AES.block_size))
+    iv = cipher.iv
+    return iv + ct_bytes
 
-def is_contact_online(email, host, port):
+def is_contact_online(email, host, port, network_key):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(1)  # Timeout for the socket operation
             s.connect((host, port))
-            s.sendall(email.encode())
+
+            cncrypted_email = encrypt_network_data(email, network_key)
+            s.sendall(cncrypted_email)
             data = s.recv(1024).decode()
             return data == "online"
     except socket.error:
