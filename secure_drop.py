@@ -187,6 +187,22 @@ def add_contact():
     # encrypt the data
     niv, encrypted_name = encrypt_data(name, encryption_key)
     eiv, encrypted_email = encrypt_data(email, encryption_key)
+    
+    # check to see if this user already exists.
+    # if they do, overrrite their data.
+    # we only care about unique email addresses, not names 
+       
+    old_contacts = obj["data"]["contacts"]
+    obj["data"]["contacts"] = []
+   
+    for contact in old_contacts: 
+        raw_name, raw_email = decrypt_contact(contact)
+        if email == raw_email:
+            print(f'A user \"{raw_name}\" is already registered as a contact with that email. Updating the name to \"{name}\".') 
+        else:
+            obj["data"]["contacts"].append(contact) 
+   
+    # add the new/updated contact 
     obj["data"]["contacts"].append({
         "name": encrypted_name,
         "niv":  niv,
