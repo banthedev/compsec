@@ -40,7 +40,47 @@ def main():
         elif cmd == "list":
             list_contacts()
 
+        elif cmd == "send":
+            send_file()
+
     print("Exiting SecureDrop.")
+
+
+def send_file():
+    encryption_key = get_aes_encryption_key()
+
+    contact_index = int(input("Enter the index of the contact to send the file to: "))
+    contacts = json.load(open(config_file, "r"))["data"]["contacts"]
+
+    if 0 <= contact_index < len(contacts):
+        contact = contacts[contact_index]
+
+        file_path = input("Enter the path of the file to send: ")
+
+        try:
+            with open(file_path, 'rb') as file:
+                file_data = file.read()
+
+            iv, encrypted_file_data = encrypt_data(file_data, encryption_key)
+
+            message = {
+                "iv": iv,
+                "data": encrypted_file_data
+            }
+
+            print("IV:", iv)
+            print("Encrypted Data:", encrypted_file_data)
+
+            print(f"File sent to {contact['name']} ({contact['email']}) successfully.")
+        except FileNotFoundError:
+            print("File not found.")
+    else:
+        print("Invalid contact index.")
+
+def decrypt_file(iv, encrypted_data, key):
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    decrypted_data = unpad(cipher.decrypt(encrypted_data), AES.block_size)
+    return decrypted_data
 
 # returns true if the user has sucessfully logged in
 # returns false if there was an error
@@ -258,8 +298,11 @@ def print_help():
 
 
 def encrypt_data(data, key):
+    if isinstance(data, str):
+        # If data is a string, encode it to bytes and then pad
+        data = data.encode('utf-8')
     cipher = AES.new(key, AES.MODE_CBC)
-    ct_bytes = cipher.encrypt(pad(data.encode('utf-8'), AES.block_size))
+    ct_bytes = cipher.encrypt(pad(data, AES.block_size))
     iv = base64.b64encode(cipher.iv).decode('utf-8')
     ct = base64.b64encode(ct_bytes).decode('utf-8')
     return iv, ct
