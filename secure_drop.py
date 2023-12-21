@@ -63,13 +63,13 @@ def send_file():
 
             iv, encrypted_file_data = encrypt_data(file_data, encryption_key)
 
-            message = {
-                "iv": iv,
-                "data": encrypted_file_data
+            sender_info = {
+                "iv_from_sender": iv,
+                "encrypted_data_from_sender": encrypted_file_data
             }
 
-            print("IV:", iv)
-            print("Encrypted Data:", encrypted_file_data)
+            json.dump(sender_info, open("sender_info.json", "w"),
+              sort_keys=True, indent=4)
 
             print(f"File sent to {contact['name']} ({contact['email']}) successfully.")
         except FileNotFoundError:

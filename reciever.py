@@ -5,6 +5,15 @@ import base64
 
 encryption_key_file = "./.config/SecureDrop/key.json"
 
+def read_sender_info(file_path):
+    try:
+        with open(file_path, 'r') as sender_info_file:
+            sender_info = json.load(sender_info_file)
+            return sender_info["iv_from_sender"], sender_info["encrypted_data_from_sender"]
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error reading sender_info.json: {e}")
+        return None, None
+
 def simulate_receiver(file_message, contact_encryption_key):
     iv = base64.b64decode(file_message["iv"])
     encrypted_file_data = base64.b64decode(file_message["data"])
@@ -26,13 +35,11 @@ def get_aes_encryption_key():
     encryption_key = json.load(open(encryption_key_file, "r"))["key"]
     return base64.b64decode(encryption_key)
 
-iv_from_sender = "M/LXAOjXmzVb10+RalFTRA=="
-encrypted_data_from_sender = "gnbCX/aJ/lm0PrPJKKVJy1FS6Ms6OAiRb+YkQsJqNznlM98H+xIlArFIM2ErEiVI"
+sender_info_path = "sender_info.json"
+iv_from_sender, encrypted_data_from_sender = read_sender_info(sender_info_path)
 
-file_message = {
-    "iv": iv_from_sender,
-    "data": encrypted_data_from_sender
-}
-
-contact_encryption_key = get_aes_encryption_key()
-simulate_receiver(file_message, contact_encryption_key)
+if iv_from_sender is not None and encrypted_data_from_sender is not None:
+    contact_encryption_key = get_aes_encryption_key()
+    simulate_receiver({"iv": iv_from_sender, "data": encrypted_data_from_sender}, contact_encryption_key)
+else:
+    print("Error reading sender_info.json. Make sure the file exists and contains valid JSON.")
